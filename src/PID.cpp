@@ -1,18 +1,13 @@
 #include "PID.h"
 #include <numeric>
 
-/**
- * TODO: Complete the PID class. You may add any additional desired functions.
- * test
- */
-
 PID::PID() {}
 
 PID::~PID() {}
 
 void PID::Init(double Kp_, double Ki_, double Kd_) {
   /**
-   * TODO: Initialize PID coefficients (and errors, if needed)
+   * Initialize PID coefficients 
    */
   pidinit = false;
   
@@ -27,7 +22,7 @@ void PID::Init(double Kp_, double Ki_, double Kd_) {
 
 void PID::Adapt(double Kp_, double Ki_, double Kd_) {
   /**
-   * TODO: Initialize PID coefficients (and errors, if needed)
+   * Adapt PID coefficients during twiddle-algorithm optimization
    */
   
   Kp = Kp_;

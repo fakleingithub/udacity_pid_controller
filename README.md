@@ -1,7 +1,115 @@
-# CarND-Controls-PID
+# **CarND-Path-Planning-Project**
 Self-Driving Car Engineer Nanodegree Program
-
+   
 ---
+
+[//]: # (Image References)
+
+[gif1]: ./media/pid.gif "PID Controller"
+
+
+## The PID procedure 
+
+```cpp
+	pid.diff_cte = cte - pid.prev_cte;
+	pid.prev_cte = cte;
+
+	pid.int_cte = pid.int_cte + cte;
+
+	steer_value = - pid.Kp * cte - pid.Kd * pid.diff_cte - pid.Ki * pid.int_cte;
+```
+
+
+## Description of the effect each of the P, I, D components have.
+
+`cte` (cross-track-error)
+is the latteral distance between the vehicle and the reference-trajectory, used for proportional part of PID controller to minimize the distance to the reference-trajectory (car is overshooting when just using the proportional error correction)
+
+`diff_cte` (differential cross-track-error)
+is the difference of the current cross-track-error and the previous one, for lowering or avoiding the overshoot which occur when just using proportional correction (Kp * cte)
+
+`int_cte` (integrated cross-track-error)
+is the sum of all cross-track-errors ever observed during runtime, for correcting systematic bias
+
+The car reacts as expected to the increase or decrease of each component.
+
+## Description how the final hyperparameters were chosen.
+
+Initial values were chosen for `Kp=0.2`, `Kd=3.0` and `Ki=0.004`.
+
+To improve the hyperparameters while the car drives I implemented the Twiddle algorithm.
+The algorithm sequentially updates the PID-parameters, by first trying to increase one parameter, when the error decreases, we keep the increased parameter and increase the adoption rate. If the error increases, we decrease the parameter and decrease the adoption rate. When the error then decreases, we keep the decreased parameter and increase the adoption rate. If not we only lower the adoption rate.
+
+The initial adoption rate was 0.01 for `Kp`, 0.1 for `Kd` and 0.0001 for `Ki`
+
+After approximately 30 minutes of training time the final parameters were `Kp=0.171378`, `Kd=2.70802` and `Ki=0.00388669`
+
+with the adopiton rate decreased to 0.000523348 for `Kp`, 0.00523348 for `Kd` and 0.00000471013 for `Ki`
+
+```cpp
+
+if (twiddle_activated == true) {
+      // activate twiddle algorithm for training the pid-parameters
+    
+      if ( stepcount >= stepsize ) {
+        err = err + (pow(cte, 2.0));
+      }
+      if ( stepcount >= 2 * stepsize) {
+        best_err = err / stepsize;
+        stepcount = 0;
+        runcount = runcount + 1;
+        best_err_calculated = true;
+      }
+      if (best_err_calculated == true){
+        if (runcount <= 1){
+          p[i_pid] += dp[i_pid];
+        }
+        if (runcount >= 2) {
+          if (err < best_err){
+             best_err = err; 
+             dp[i_pid] *= 1.1;
+          } 
+          else {
+            if (error_greater_best_prev == false){
+              p[i_pid] -= 2*dp[i_pid];
+              error_greater_best_prev = true;
+            } 
+            else {
+               p[i_pid] += dp[i_pid];
+               dp[i_pid] *= 0.9;
+               error_greater_best_prev = false;
+            }
+          }
+          pid.Adapt(p[0], p[1], p[2]);
+        }
+        best_err_calculated = false;
+      }
+       if (runcount == 4){
+            runcount = 0;
+            i_pid = i_pid+1;
+            if (i_pid == 3){
+               i_pid = 0;
+            }
+       }
+```
+
+## The vehicle must successfully drive a lap around the track.
+
+The vehicle drives successfully multiple rounds around the track.
+Here you can see a part of the final result:
+
+![pid controller][gif1]
+
+
+## Basic Build Instructions
+
+1. Clone this repo.
+2. Make a build directory: `mkdir build && cd build`
+3. Compile: `cmake .. && make`
+4. Run it: `./pid`. 
+
+Tips for setting up your environment can be found [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
+
 
 ## Dependencies
 
@@ -28,71 +136,4 @@ Self-Driving Car Engineer Nanodegree Program
 
 Fellow students have put together a guide to Windows set-up for the project [here](https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/files/Kidnapped_Vehicle_Windows_Setup.pdf) if the environment you have set up for the Sensor Fusion projects does not work for this project. There's also an experimental patch for windows in this [PR](https://github.com/udacity/CarND-PID-Control-Project/pull/3).
 
-## Basic Build Instructions
-
-1. Clone this repo.
-2. Make a build directory: `mkdir build && cd build`
-3. Compile: `cmake .. && make`
-4. Run it: `./pid`. 
-
-Tips for setting up your environment can be found [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
-
-## Editor Settings
-
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
-
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
-
-## Code Style
-
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
-
-## Project Instructions and Rubric
-
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
-
-More information is only accessible by people who are already enrolled in Term 2
-of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/f1820894-8322-4bb3-81aa-b26b3c6dcbaf/lessons/e8235395-22dd-4b87-88e0-d108c5e5bbf4/concepts/6a4d8d42-6a04-4aa6-b284-1697c0fd6562)
-for instructions and the project rubric.
-
-## Hints!
-
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
-
-## Call for IDE Profiles Pull Requests
-
-Help your fellow students!
-
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to we ensure
-that students don't feel pressured to use one IDE or another.
-
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
-
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
-
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
 

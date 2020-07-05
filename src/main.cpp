@@ -54,7 +54,7 @@ int main() {
 
   PID pid;
   /**
-   * TODO: Initialize the pid variable.
+   * Initialize the pid variable.
    */
   
   pid.Init(p[0], p[1], p[2]);
@@ -81,10 +81,7 @@ int main() {
           double steer_value;
    
           /**
-           * TODO: Calculate steering value here, remember the steering value is
-           *   [-1, 1].
-           * NOTE: Feel free to play around with the throttle and speed.
-           *   Maybe use another PID controller to control the speed!
+           * Calculate steering value
            */
           
           if (twiddle_activated == true) {
@@ -123,33 +120,27 @@ int main() {
               if (best_err_calculated == true){
 
                 if (runcount <= 1){
-                  std::cout << "I am here! runcount <=1" << std:: endl;
                   p[i_pid] += dp[i_pid];
                 }
                 if (runcount >= 2) {
                   if (err < best_err){
                      best_err = err; 
-                     std::cout << "I am here! runcount >=2 err < best_err" << std:: endl;
                      dp[i_pid] *= 1.1;
                   } 
                   else {
                     if (error_greater_best_prev == false){
                       p[i_pid] -= 2*dp[i_pid];
-                      std::cout << "I am here! runcount >=2 err > best_err  2*dp[i_pid]" << std:: endl;
                       error_greater_best_prev = true;
                     } 
                     else {
                        p[i_pid] += dp[i_pid];
                        dp[i_pid] *= 0.9;
-                      std::cout << "I am here! runcount >=2 err > best_err  p[i_pid] += dp[i_pid]" << std:: endl;
                        error_greater_best_prev = false;
                     }
                   }
                   pid.Adapt(p[0], p[1], p[2]);
                 }
-
                 best_err_calculated = false;
-
               }
                if (runcount == 4){
                     runcount = 0;
